@@ -186,9 +186,9 @@ class TrossenOpenPIBridge:
                 if len(self.action_buffer[self.episode_step]) == 0:
                     a_t = np.zeros(self.action_dim)
                 else:
-                    candidates = np.array(self.action_buffer[self.episode_step])  # shape: (N, 14)
+                    candidates = np.array(self.action_buffer[self.episode_step])  # shape: (N, 7)
                     weights = self._get_weights(len(candidates))  # shape: (N,)
-                    a_t = np.average(candidates, axis=0, weights=weights)  # shape: (14,)
+                    a_t = np.average(candidates, axis=0, weights=weights)  # shape: (7,)
             else:
                 a_t = self.current_action_chunk[self.action_chunk_idx]
             # Execute the current action
@@ -220,8 +220,13 @@ class TrossenOpenPIBridge:
 
     def autonomous_mode(self, task_prompt: str = "look down"):
         """Run in autonomous mode where the arm executes policy predictions."""
-        logger.info("Starting autonomous mode")
-        self.run_episode(task_prompt=task_prompt)
+        try:
+            logger.info("Starting autonomous mode")
+            self.run_episode(task_prompt=task_prompt)
+        except Exception as e:
+            # Make sure to clean up robot and camera resources on exception
+            self.cleanup()
+            raise e
 
     def cleanup(self):
         """Clean up resources."""

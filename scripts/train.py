@@ -2,6 +2,7 @@ import dataclasses
 import functools
 import logging
 import platform
+from datetime import datetime
 from typing import Any
 
 import etils.epath as epath
@@ -194,6 +195,12 @@ def train_step(
 def main(config: _config.TrainConfig):
     init_logging()
     logging.info(f"Running on: {platform.node()}")
+
+    # On script startup, set the datetime into the config
+    # Checkpointing uses this
+    now = datetime.now()
+    experiment_datetime_string = now.strftime("%Y%m%d_%H%M%S")
+    config.experiment_datetime_string = experiment_datetime_string
 
     if config.batch_size % jax.device_count() != 0:
         raise ValueError(

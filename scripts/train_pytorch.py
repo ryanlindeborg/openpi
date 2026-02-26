@@ -46,6 +46,8 @@ import openpi.shared.normalize as _normalize
 import openpi.training.config as _config
 import openpi.training.data_loader as _data
 
+from datetime import datetime
+
 
 def init_logging():
     level_mapping = {"DEBUG": "D", "INFO": "I", "WARNING": "W", "ERROR": "E", "CRITICAL": "C"}
@@ -307,6 +309,12 @@ def log_memory_usage(device, step, phase="unknown"):
 
 
 def train_loop(config: _config.TrainConfig):
+    # On script startup, set the datetime into the config
+    # Checkpointing uses this
+    now = datetime.now()
+    experiment_datetime_string = now.strftime("%Y%m%d_%H%M%S")
+    config.experiment_datetime_string = experiment_datetime_string
+
     use_ddp, local_rank, device = setup_ddp()
     is_main = (not use_ddp) or (dist.get_rank() == 0)
     set_seed(config.seed, local_rank)
