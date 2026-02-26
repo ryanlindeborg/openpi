@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Trossen Arm <-> OpenPI Policy Server Bridge (Bimanual Version)
+Trossen Arm <-> OpenPI Policy Server Bridge (Single Arm Version)
 
-Bridge between a bimanual widowx and the OpenPI policy server.
+Bridge between a single widowx and the OpenPI policy server.
 Handles:
 1. Collecting observations from the arm (joint positions, images)
 2. Sending observations to the policy server via WebSocket
@@ -10,7 +10,7 @@ Handles:
 4. Executing actions on the arm
 
 Usage:
-    python main.py --mode autonomous --task_prompt "grab and handover red cube"
+    python main.py --mode autonomous --task_prompt "sweep the red blocks into the red square region"
 
     Test mode (no movement):
     python main.py --mode test --task_prompt "grab and handover red cube"
@@ -24,7 +24,7 @@ import time
 import cv2
 from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig
 from lerobot.robots import make_robot_from_config
-from lerobot_robot_trossen.config_bi_widowxai_follower import BiWidowXAIFollowerRobotConfig
+from lerobot_robot_trossen.config_widowxai_follower import WidowXAIFollowerRobotConfig
 import numpy as np
 from openpi_client import websocket_client_policy
 from scipy.interpolate import PchipInterpolator
@@ -54,24 +54,17 @@ class TrossenOpenPIBridge:
             host=policy_server_host, port=policy_server_port
         )
 
-        robot_config = BiWidowXAIFollowerRobotConfig(
-            id="bimanual_follower",
-            left_arm_ip_address="192.168.1.5",
-            right_arm_ip_address="192.168.1.4",
+        robot_config = WidowXAIFollowerRobotConfig(
+            id="trossen_widowx_follower",
+            ip_address="192.168.1.3",
             min_time_to_move_multiplier=4.0,
             loop_rate=30,
             cameras={
                 "cam_high": RealSenseCameraConfig(
-                    serial_number_or_name="218622270304", width=640, height=480, fps=30, use_depth=False
-                ),
-                "cam_low": RealSenseCameraConfig(
-                    serial_number_or_name="130322272628", width=640, height=480, fps=30, use_depth=False
+                    serial_number_or_name="218622276660", width=640, height=480, fps=30, use_depth=False
                 ),
                 "cam_right_wrist": RealSenseCameraConfig(
-                    serial_number_or_name="128422271347", width=640, height=480, fps=30, use_depth=False
-                ),
-                "cam_left_wrist": RealSenseCameraConfig(
-                    serial_number_or_name="218622274938", width=640, height=480, fps=30, use_depth=False
+                    serial_number_or_name="218622271120", width=640, height=480, fps=30, use_depth=False
                 ),
             },
         )
@@ -95,7 +88,7 @@ class TrossenOpenPIBridge:
             self.max_steps + self.action_chunk_size
         )  # Buffer size to hold actions for the entire episode
 
-        self.action_dim = len(self.robot._joint_ft)  # 7 joints per arm * 2 arms
+        self.action_dim = len(self.robot._joint_ft)  # 7 joints per arm * 1 arm
 
     def execute_action(self, action: np.ndarray):
         """Execute action on the arm."""
@@ -237,7 +230,7 @@ class TrossenOpenPIBridge:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Trossen AI Stationary Kit <-> OpenPI Policy Server Bridge")
+    parser = argparse.ArgumentParser(description="Trossen AI Solo Kit <-> OpenPI Policy Server Bridge")
     parser.add_argument("--policy_host", default="localhost", help="Policy server host")
     parser.add_argument("--policy_port", type=int, default=8000, help="Policy server port")
     parser.add_argument("--control_freq", type=int, default=30, help="Control frequency in Hz")
@@ -247,7 +240,7 @@ if __name__ == "__main__":
         default="autonomous",
         help="Operation mode: autonomous (execute) or test (no movement)",
     )
-    parser.add_argument("--task_prompt", default="move the arm to the left", help="Task description for the policy")
+    parser.add_argument("--task_prompt", default="sweep the red blocks into the red square region", help="Task description for the policy")
     parser.add_argument("--max_steps", type=int, default=1000, help="Maximum steps per episode")
     args = parser.parse_args()
 
