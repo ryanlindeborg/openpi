@@ -707,8 +707,8 @@ _CONFIGS = [
             adapt_to_pi=False,
             repo_id="ryanlindeborg/trossen_ai_solo_sweep_blocks",
             assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_base/assets",
-                asset_id="trossen",
+                assets_dir="/mnt/data/saved_data/openpi/assets/pi05_trossen_sweep_blocks",
+                asset_id="ryanlindeborg/trossen_ai_solo_sweep_blocks",
             ),
             default_prompt="sweep the red blocks into the red square region",
             repack_transforms=_transforms.Group(
