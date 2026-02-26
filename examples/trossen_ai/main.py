@@ -24,7 +24,7 @@ import time
 import cv2
 from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig
 from lerobot.robots import make_robot_from_config
-from lerobot_robot_trossen.config_widowxai_follower import WidowXAIFollowerRobotConfig
+from lerobot_robot_trossen.config_widowxai_follower import WidowXAIFollowerConfig
 import numpy as np
 from openpi_client import websocket_client_policy
 from scipy.interpolate import PchipInterpolator
@@ -54,7 +54,7 @@ class TrossenOpenPIBridge:
             host=policy_server_host, port=policy_server_port
         )
 
-        robot_config = WidowXAIFollowerRobotConfig(
+        robot_config = WidowXAIFollowerConfig(
             id="trossen_widowx_follower",
             ip_address="192.168.1.3",
             min_time_to_move_multiplier=4.0,
