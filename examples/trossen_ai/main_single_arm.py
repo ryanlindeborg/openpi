@@ -31,6 +31,7 @@ from scipy.interpolate import PchipInterpolator
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class TrossenOpenPIBridge:
@@ -67,6 +68,15 @@ class TrossenOpenPIBridge:
                     serial_number_or_name="218622271120", width=640, height=480, fps=30, use_depth=False
                 ),
             },
+            max_relative_target={
+                'joint_0': 0.075,
+                'joint_1': 0.075,
+                'joint_2': 0.075,
+                'joint_3': 0.075,
+                'joint_4': 0.075,
+                'joint_5': 0.075,
+                'left_carriage_joint': 0.002
+            }
         )
         self.robot = make_robot_from_config(robot_config)
         self.robot.connect()
@@ -171,7 +181,9 @@ class TrossenOpenPIBridge:
 
                 logger.info(f"Step {self.episode_step}: Requesting new action chunk")
                 response = self.policy_client.infer(observation)
+                # print(f"Received action chunk response from policy server: {response}")
                 self.current_action_chunk = response["actions"]
+                # print(f"Action chunk shape: {self.current_action_chunk.shape}")
 
                 for k in range(self.action_chunk_size):
                     future_t = self.episode_step + k
@@ -192,11 +204,13 @@ class TrossenOpenPIBridge:
             else:
                 a_t = self.current_action_chunk[self.action_chunk_idx]
             # Execute the current action
+            # As part of trossen controller initialization, we bring the arm to the expected start pose, so we can reduce the time to move to the start position (was originally 5 seconds)
             if is_first_step:
                 logger.info("Moving to start position to avoid large jumps...")
-                self.move_to_start_position(a_t, duration=5.0)
+                self.move_to_start_position(a_t, duration=1.0)
                 is_first_step = False
             else:
+                # logger.info(f"Executing action: {a_t}")
                 self.execute_action(a_t)
 
             self.action_chunk_idx += 1
@@ -207,9 +221,10 @@ class TrossenOpenPIBridge:
 
             # Busy wait to maintain control frequency
             if busy_wait_time > 0:
+                # print(f"Sleeping for {busy_wait_time:.6f} seconds...")
                 time.sleep(busy_wait_time)
             loop_s = time.perf_counter() - start_loop_time
-            logger.info(f"time: {loop_s * 1e3:.2f}ms ({1 / loop_s:.0f} Hz)")
+            # logger.info(f"time: {loop_s * 1e3:.2f}ms ({1 / loop_s:.0f} Hz)")
 
         self.is_running = False
         logger.info(f"Episode completed after {self.episode_step} steps")
@@ -220,13 +235,8 @@ class TrossenOpenPIBridge:
 
     def autonomous_mode(self, task_prompt: str = "look down"):
         """Run in autonomous mode where the arm executes policy predictions."""
-        try:
-            logger.info("Starting autonomous mode")
-            self.run_episode(task_prompt=task_prompt)
-        except Exception as e:
-            # Make sure to clean up robot and camera resources on exception
-            self.cleanup()
-            raise e
+        logger.info("Starting autonomous mode")
+        self.run_episode(task_prompt=task_prompt)
 
     def cleanup(self):
         """Clean up resources."""
@@ -257,6 +267,7 @@ if __name__ == "__main__":
         max_steps=args.max_steps,
     )
 
-    bridge.autonomous_mode(task_prompt=args.task_prompt)
-
-    bridge.cleanup()
+    try:
+        bridge.autonomous_mode(task_prompt=args.task_prompt)
+    finally:
+        bridge.cleanup()
