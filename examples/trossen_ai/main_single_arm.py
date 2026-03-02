@@ -46,6 +46,7 @@ class TrossenOpenPIBridge:
         max_steps: int = 1000,
     ):
         self.control_frequency = control_frequency
+        print(f"control_frequency: {self.control_frequency}")
         self.max_steps = max_steps
         self.dt = 1.0 / control_frequency
         self.test_mode = test_mode
@@ -68,15 +69,16 @@ class TrossenOpenPIBridge:
                     serial_number_or_name="218622271120", width=640, height=480, fps=30, use_depth=False
                 ),
             },
+            # This set of values for max_relative_target is optimized for the sweep task
             max_relative_target={
-                'joint_0': 0.075,
-                'joint_1': 0.075,
-                'joint_2': 0.075,
-                'joint_3': 0.075,
-                'joint_4': 0.075,
-                'joint_5': 0.075,
-                'left_carriage_joint': 0.002
-            }
+                'joint_0': 0.01,
+                'joint_1': 0.05,
+                'joint_2': 5,
+                'joint_3': 5,
+                'joint_4': 5,
+                'joint_5': 5,
+                'left_carriage_joint': 5
+            },
         )
         self.robot = make_robot_from_config(robot_config)
         self.robot.connect()
@@ -89,6 +91,7 @@ class TrossenOpenPIBridge:
         self.episode_step = 0
         self.is_running = False
         self.rate_of_inference = 50  # Number of control steps per policy inference (matches README and Pi-0 paper)
+        print(f"rate_of_inference: {self.rate_of_inference}")
 
         self.temporal_ensemble_coefficient = None  # Temporal ensembling weight (can be set to None for no ensembling)
 
@@ -206,7 +209,7 @@ class TrossenOpenPIBridge:
             # Execute the current action
             # As part of trossen controller initialization, we bring the arm to the expected start pose, so we can reduce the time to move to the start position (was originally 5 seconds)
             if is_first_step:
-                logger.info("Moving to start position to avoid large jumps...")
+                logger.info("Moving to start position (over 1 second) to avoid large jumps...")
                 self.move_to_start_position(a_t, duration=1.0)
                 is_first_step = False
             else:
